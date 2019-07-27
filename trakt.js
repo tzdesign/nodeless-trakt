@@ -190,7 +190,7 @@ module.exports = class Trakt {
                 'trakt-api-version': '2',
                 'trakt-api-key': this._settings.client_id
             },
-            body: (method.body ? Object.assign({}, method.body) : {})
+            body: (method.body? Object.assign({}, method.body) : {})
         };
 
         if (method.opts['auth']) req.headers['Authorization'] = 'Bearer ' + this._authentication.access_token;
@@ -204,14 +204,24 @@ module.exports = class Trakt {
 
         req.body = JSON.stringify(req.body);
 
+        if(['HEAD','GET'].includes(method.method)){
+            delete req.body
+        }
+
+
         this._debug(req);
-        return fetch(req.url, req).then(response => this._parseResponse(method, params, response));
+        return fetch(req.url, req).then(async r => {
+            const body = await r.text()
+            return {body,headers:r.headers.map}
+        })
+        .then(response => this._parseResponse(method, params, response));
     }
 
     // Parse trakt response: pagination & stuff
     _parseResponse (method, params, response) {
+        
         if (!response.body) return response.body;
-
+        
         const data = JSON.parse(response.body);
         let parsed = data;
 
